@@ -1,3 +1,12 @@
+import os
+
+# 強制清空環境變數中的代理設定，防止 OpenAI SDK 誤抓
+os.environ.pop('HTTP_PROXY', None)
+os.environ.pop('HTTPS_PROXY', None)
+os.environ.pop('http_proxy', None)
+os.environ.pop('https_proxy', None)
+# ... 其餘 import 保持不變
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -604,12 +613,8 @@ def prepare_comprehensive_analysis_data(fmp_data, ticker):
 # 函數：使用OpenAI分析財務數據
 def analyze_with_openai(comprehensive_data, api_key, ticker):
     try:
-        import httpx
-        # 強制不使用代理，解決 proxies 參數報錯問題
-        client = OpenAI(
-            api_key=api_key,
-            http_client=httpx.Client(proxies={})
-        )
+        client = OpenAI(api_key=api_key)
+        
         # System 角色：設定 AI 的專業角色與語氣
         system_message = {
             "role": "system",
