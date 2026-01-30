@@ -614,15 +614,16 @@ def prepare_comprehensive_analysis_data(fmp_data, ticker):
 def analyze_with_openai(comprehensive_data, api_key, ticker):
     try:
         from openai import OpenAI
+        import httpx
         
-        # 這是解決該報錯的最強大絕招：手動定義一個完全沒有代理的 httpx 客戶端
-        # 避開 OpenAI SDK 內部嘗試自動注入 proxies 參數的邏輯
-        clean_http_client = httpx.Client(proxies={})
+        # 建立一個完全獨立、無代理的 HTTP 客戶端
+        clean_http_client = httpx.Client(proxies={}, trust_env=False)
         
-        client = OpenAI(
-            api_key=api_key,
-            http_client=clean_http_client
-        )
+        # 使用最基礎的初始化，將 api_key 與 http_client 分開處理
+        client = OpenAI(api_key=api_key)
+        client.http_client = clean_http_client # 手動覆蓋底層客戶端
+        
+        # ... 後續 system_message 與 user_prompt 保持不變
         # System 角色：設定 AI 的專業角色與語氣
         system_message = {
             "role": "system",
