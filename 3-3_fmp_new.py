@@ -613,8 +613,9 @@ def prepare_comprehensive_analysis_data(fmp_data, ticker):
 # 函數：使用OpenAI分析財務數據
 def analyze_with_openai(comprehensive_data, api_key, ticker):
     try:
+        from openai import OpenAI
         client = OpenAI(api_key=api_key)
-        
+  
         # System 角色：設定 AI 的專業角色與語氣
         system_message = {
             "role": "system",
