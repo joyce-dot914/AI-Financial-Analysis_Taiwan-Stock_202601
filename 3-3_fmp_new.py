@@ -1,12 +1,5 @@
 import os
 import httpx
-
-# 強制清空環境變數中的代理設定，防止 OpenAI SDK 誤抓
-os.environ.pop('HTTP_PROXY', None)
-os.environ.pop('HTTPS_PROXY', None)
-os.environ.pop('http_proxy', None)
-os.environ.pop('https_proxy', None)
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -613,17 +606,23 @@ def prepare_comprehensive_analysis_data(fmp_data, ticker):
 # 函數：使用OpenAI分析財務數據
 def analyze_with_openai(comprehensive_data, api_key, ticker):
     try:
-        from openai import OpenAI
+        import os
         import httpx
+        from openai import OpenAI
         
-        # 建立一個完全獨立、無代理的 HTTP 客戶端
-        clean_http_client = httpx.Client(proxies={}, trust_env=False)
+        # 在函數內清理環境變量
+        for key in ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy']:
+            os.environ.pop(key, None)
         
-        # 使用最基礎的初始化，將 api_key 與 http_client 分開處理
-        client = OpenAI(api_key=api_key)
-        client.http_client = clean_http_client # 手動覆蓋底層客戶端
-        
-        # ... 後續 system_message 與 user_prompt 保持不變
+        # 創建乾淨的客戶端
+        client = OpenAI(
+            api_key=api_key,
+            http_client=httpx.Client(
+                proxies=None,
+                transport=httpx.HTTPTransport(retries=3),
+                timeout=60.0
+            )
+        )
         # System 角色：設定 AI 的專業角色與語氣
         system_message = {
             "role": "system",
@@ -707,7 +706,7 @@ def analyze_with_openai(comprehensive_data, api_key, ticker):
 
         # 呼叫 OpenAI API
         completion = client.chat.completions.create(
-            model="o4-mini",
+            model="gpt-4o-mini",
             messages=[
                 system_message,
                 {"role": "user", "content": user_prompt}
