@@ -1,11 +1,11 @@
 import os
+import httpx
 
 # 強制清空環境變數中的代理設定，防止 OpenAI SDK 誤抓
 os.environ.pop('HTTP_PROXY', None)
 os.environ.pop('HTTPS_PROXY', None)
 os.environ.pop('http_proxy', None)
 os.environ.pop('https_proxy', None)
-# ... 其餘 import 保持不變
 
 import streamlit as st
 import pandas as pd
@@ -614,8 +614,15 @@ def prepare_comprehensive_analysis_data(fmp_data, ticker):
 def analyze_with_openai(comprehensive_data, api_key, ticker):
     try:
         from openai import OpenAI
-        client = OpenAI(api_key=api_key)
-  
+        
+        # 這是解決該報錯的最強大絕招：手動定義一個完全沒有代理的 httpx 客戶端
+        # 避開 OpenAI SDK 內部嘗試自動注入 proxies 參數的邏輯
+        clean_http_client = httpx.Client(proxies={})
+        
+        client = OpenAI(
+            api_key=api_key,
+            http_client=clean_http_client
+        )
         # System 角色：設定 AI 的專業角色與語氣
         system_message = {
             "role": "system",
